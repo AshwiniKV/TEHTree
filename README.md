@@ -1,2 +1,2 @@
 # TEHTree
- Treatment effect heterogeneity
+ Treatment effect heterogeneity using conditional inference trees
