@@ -1,0 +1,22 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1572990175938.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "0",
+    "id" : "398245C6",
+    "lastKnownWriteTime" : 1572990613,
+    "last_content_update" : 1572990613183,
+    "path" : "~/TEHTree/R/TreeMat.R",
+    "project_path" : "R/TreeMat.R",
+    "properties" : {
+        "cursorPosition" : "6,46",
+        "scrollLine" : "0"
+    },
+    "relative_order" : 2,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}

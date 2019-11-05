@@ -1,0 +1,10 @@
+Package: TEHTree
+Type: Package
+Title: Treatment effect heterogeneity using conditional inference trees
+Version: 0.1.0
+Author: Julian Wolfson, Brandon Koch, Ashwini Venkatasubramaniam, David Vock and Lauren Erickson.
+Maintainer: Ashwini Venkatasubramaniam <ashwinikv01@gmail.com>
+Description: A novel approach to assessing effect heterogeneity of a randomised binary treatment. This method combines prognostic score matching and conditional inference trees to characterise the heterogeneity. Additionally, this method allows for the Type I error (i.e., the false discovery of subgroups) to be explicitly controlled.  
+License: MIT
+Encoding: UTF-8
+RoxygenNote: 6.1.1
