@@ -1,20 +1,16 @@
-#' Build the tree and specify the appropriate parameters
+#' Build the double-sample tree structure and specify the appropriate parameters
 #'
 #' @param Y Response vector
 #' @param X Covariates matrix
 #' @param ctl.ind Control Index
 #' @param indx Index
-#' @param indx.TEST Index Test dataset
+#' @param indx.TEST Index in the Test dataset
 #' @param X.TEST The defined covariate test dataset
 #' @param pval.thresh p-value threshold
 #' @param min.leaf.size Minimum lead size
 #' @param min.split.size Minimum split size
 #' @param split.pts Increment of the sequence to define split points
 #' @export
-#'
-#'
-#'
-#'
 #'
 #'
 
