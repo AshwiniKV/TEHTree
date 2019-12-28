@@ -1,0 +1,544 @@
+library(MASS)
+library(Matching)
+library(SuperLearner)
+library(parallel)
+library(gam)
+library(splines)
+library(polspline)
+library(randomForest)
+library(nlme)
+
+
+library(devtools)
+install_github("susanathey/causalTree")
+library(causalTree)
+library(MASS)
+
+
+MatchForTree <- function(Y, Z, X, version = "standard", nmatch = 1) {
+  
+  if(is.null(dim(X))) {
+    X.cat <- length(table(X)) <= 5
+  }  else {
+    X.cat <- apply(X,2,function(x) { length(table(x))<=5})
+  }
+  
+  if(version == "standard") { 
+    M <- Match(Y=Y,
+               Tr=Z,
+               X=X,
+               exact=X.cat,
+               ties=FALSE,
+               estimand="ATT",
+               version = "fast")
+    Yout <- Y[M$index.treated] - Y[M$index.control]
+    
+    if(is.null(dim(X))) {
+      ##Xout <- (X[M$index.treated] + X[M$index.control]) / 2
+      Xout <- min(abs(X[M$index.treated]), abs() + X[M$index.control]) / 2
+    } else{
+      Xout <- sapply(1:ncol(X),function(j) {
+        x <- X[,j]
+        if(X.cat[j]) { return(x[M$index.treated]) }
+        else { return((x[M$index.treated]+x[M$index.control])/2)}
+      })
+    }
+    
+  }
+  
+  if(version == "prognostic") { 
+    #rhs <- paste( sprintf("X[, %d]", 1:(ncol(X))), collapse = " + ")
+    #fmla <- sprintf("Y ~ %s", rhs)
+    
+    #D <- data.frame( Y, X )
+    PS <- predict( SuperLearner( Y = Y, X = data.frame(X),
+                                SL.library = c("SL.glm", "SL.randomForest", "SL.gam",
+                                             "SL.polymars", "SL.mean", "SL.glm.interaction",
+                                  "SL.step", "SL.step.interaction")),
+                  newdata = data.frame(X))$pred
+    
+#    PS <- predict( lm( Y ~ .*., data = D ) )
+    
+    M <- Match(Y=Y,
+               Tr=Z,
+               X=PS,
+               ties=FALSE,
+               estimand="ATT",
+               version = "fast")
+    Yout <- Y[M$index.treated] - Y[M$index.control]
+    
+    if(is.null(dim(X))) {
+      Xout <- X[M$index.treated]
+      #Xout <- (X[M$index.treated] + X[M$index.control]) / 2
+    } else{
+      Xout <- X[M$index.treated, ]
+      #Xout <- sapply(1:ncol(X),function(j) {
+      #  x <- X[,j]
+      #  if(X.cat[j]) { return(x[M$index.treated]) }
+      #  else { return((x[M$index.treated]+x[M$index.control])/2)}
+      #})
+    } 
+  }
+  
+  if(version == "Xmin") { 
+    M <- Match(Y=Y,
+               Tr=Z,
+               X=X,
+               exact=X.cat,
+               ties=FALSE,
+               estimand="ATT",
+               version = "fast")
+    Yout <- Y[M$index.treated] - Y[M$index.control]
+    
+    if(is.null(dim(X))) {
+      ##Xout <- (X[M$index.treated] + X[M$index.control]) / 2
+      XTC <- cbind( X[M$index.treated], X[M$index.control])
+      Xout <- apply( XTC, 1, function(xrow) { xrow[which.min(abs(xrow))] })
+    } else{
+      Xout <- sapply(1:ncol(X),function(j) {
+        x <- X[,j]
+        if(X.cat[j]) { return(x[M$index.treated]) }
+        else { 
+          XTC <- cbind( x[M$index.treated], x[M$index.control])
+          return( apply( XTC, 1, function(xrow) { xrow[which.min(abs(xrow))] }) )
+        } })  }
+  }
+  
+  if(version == "Xtrt") {
+    M <- Match(Y=Y,
+               Tr=Z,
+               X=X,
+               exact=X.cat,
+               ties=FALSE,
+               estimand="ATT",
+               version = "fast")
+    Yout <- Y[M$index.treated] - Y[M$index.control]
+    
+    if(is.null(dim(X))) {
+      ##Xout <- (X[M$index.treated] + X[M$index.control]) / 2
+      Xout <- X[M$index.treated]
+    } else{
+      Xout <- sapply(1:ncol(X),function(j) {
+        x <- X[,j]
+        if(X.cat[j]) { return(x[M$index.treated]) }
+        else { 
+          XTC <- cbind( x[M$index.treated], x[M$index.control])
+          return( apply( XTC, 1, function(xrow) { xrow[which.min(abs(xrow))] }) )
+        } })  }    
+  }
+  
+  if(version == "biasadjusted") {
+    M <- Match(Y=Y,
+               Tr=Z,
+               X=X,
+               exact=X.cat,
+               ties=TRUE,
+               estimand="ATT",
+               BiasAdjust = TRUE,
+               version = "standard")
+    bias <- M$est.noadj - M$est
+    Yout <- Y[M$index.treated] - Y[M$index.control] - bias 
+    
+    if(is.null(dim(X))) {
+      Xout <- (X[M$index.treated] + X[M$index.control]) / 2
+    } else{
+      Xout <- sapply(1:ncol(X),function(j) {
+        x <- X[,j]
+        if(X.cat[j]) { return(x[M$index.treated]) }
+        else { return((x[M$index.treated]+x[M$index.control])/2)}
+      })
+    }
+    
+  }
+  
+  if(version == "autobalance") {
+    sink("NUL")
+    G <- GenMatch(Tr=Z, X=X, exact = X.cat, ties = FALSE, verbose = FALSE)
+    sink()
+    
+    M <- Match(Y=Y,
+               Tr=Z,
+               X=X,
+               exact=X.cat,
+               ties=FALSE,
+               estimand="ATT",
+               Weight.matrix = G,
+               version = "fast")
+    Yout <- Y[M$index.treated] - Y[M$index.control]
+    
+    if(is.null(dim(X))) {
+      Xout <- (X[M$index.treated] + X[M$index.control]) / 2
+    } else{
+      Xout <- sapply(1:ncol(X),function(j) {
+        x <- X[,j]
+        if(X.cat[j]) { return(x[M$index.treated]) }
+        else { return((x[M$index.treated]+x[M$index.control])/2)}
+      })
+    }
+  }
+  
+  return(list(Y.match=Yout,X.match=Xout, itrt = M$index.treated, ictl = M$index.control))
+}
+
+LMEtree <- function(Y,X,ctl.ind,indx,indx.TEST,X.TEST,pval.thresh=0.05,min.leaf.size=20,
+	min.split.size=10,split.pts=0.05,min.eff.size=0.25*sd(Y,na.rm=T)) {
+		#NOTE: I'm not currently using min.eff.size in this fncn
+  
+  leaf.list <- list(nodetype = "<leaf>",
+       index = indx,
+       index.TEST=indx.TEST,
+       splitleft = NA,
+       splitright = NA,
+       left = NA,
+       right = NA)
+  
+  if(length(indx) < min.leaf.size) return(leaf.list)
+  
+  df  <- data.frame(Y,X,ctl.ind)[indx,]
+  
+  df.TEST <- data.frame(Y,X.TEST,ctl.ind)[indx.TEST,]
+  
+  colnames(df) <- c("Y",paste0("X",1:ncol(X)),"ctl.ind")
+  
+  colnames(df.TEST) <- c("Y",paste0("X.TEST",1:ncol(X.TEST)),"ctl.ind")
+
+  p <- sapply(1:ncol(X), function(j) {
+    fmla <- as.formula( sprintf("Y~X%d",j))
+    fit <- tryCatch(suppressWarnings(lme(fmla, random = ~1 | ctl.ind, data = df)),error=function(i){return(NA)})
+    if(is.na(fit[1])){
+    	pval <- 1
+    }else{
+    	## Grab the p-value
+    	pval <- summary(fit)$tTable[2,5]
+    }
+    return(ifelse(is.nan(pval),1,pval))
+  })
+  
+  if(is.null(p)) return(leaf.list)
+  
+  ## Apply the Bonferroni correction
+  corr.pval <-  p.adjust(p, method = "bonferroni", n = length(p))
+  
+  k <- which.min(corr.pval)
+  
+  if(is.null(k)) return( leaf.list )
+  if(corr.pval[k] < pval.thresh) {
+    ## Do the splitting:
+    df$X.split <- X[indx,k]
+    
+    df.TEST$X.split <- X.TEST[indx.TEST,k]
+    
+    split.points <- unique(quantile(df$X.split, seq(0,1,by=split.pts)))
+
+    valid.split.points <- split.points[sapply(split.points, function(sp) {
+      split.left <- indx[ which( df$X.split <= sp) ]
+      split.right <- indx[ which( df$X.split > sp) ]
+      
+      split.left.TEST <- indx.TEST[ which( df.TEST$X.split <= sp) ]
+      split.right.TEST <- indx.TEST[ which( df.TEST$X.split > sp) ]
+      
+      return( (length(split.left) >= min.split.size) & (length(split.right) >= min.split.size) )
+    })]
+
+    if(length(valid.split.points)==0) return(leaf.list) ## If no valid split points
+    
+    coeffs <- try( sapply( valid.split.points, 
+                      function(x) {
+                        df$x <- x
+                        fit <- try( lme(Y~I(X.split <= x), random = ~1 | ctl.ind, data = df) )
+                        if(inherits(fit, "try-error")) return(0)
+                        return(summary(fit)$tTable[2,1])
+                      }) )
+    if(inherits(coeffs, "try-error")) {
+      warning("Error in splitting, cutting off tree building.")
+      return(leaf.list)
+    }
+    
+    ## Check size of coefficient
+    ##if(abs(max(abs(coeffs))) < min.eff.size) return(leaf.list)
+    if(!is.numeric(coeffs)) return(leaf.list)
+    
+    ## Find the largest coefficient
+    wmax.coeff <- which.max(abs(coeffs))
+    ## Split indx according
+    split.left <- indx[ which( df$X.split <= valid.split.points[wmax.coeff]) ]
+    split.right <- indx[ which( df$X.split > valid.split.points[wmax.coeff]) ]
+    
+    split.left.TEST <- indx.TEST[ which( df.TEST$X.split <= valid.split.points[wmax.coeff]) ]
+    split.right.TEST <- indx.TEST[ which( df.TEST$X.split > valid.split.points[wmax.coeff]) ]
+    
+    splitvarleft <- sprintf("X%d <= %.2f",k, valid.split.points[wmax.coeff])
+    splitvarright <- sprintf("X%d > %.2f", k, valid.split.points[wmax.coeff])
+    
+    splitvarleft.TEST <- sprintf("X.TEST%d <= %.2f",k, valid.split.points[wmax.coeff])
+    splitvarright.TEST <- sprintf("X.TEST%d > %.2f", k, valid.split.points[wmax.coeff])
+    
+    ## return split index
+    return( list( nodetype = "internal",
+                  index = indx,
+                   index.TEST = indx.TEST,
+                  splitleft = splitvarleft, 
+                  splitright = splitvarright,
+                  left = LMEtree(Y,X,ctl.ind,split.left, split.left.TEST,X.TEST,pval.thresh), 
+                  right = LMEtree(Y,X,ctl.ind,split.right, split.right.TEST,X.TEST,pval.thresh) ) ) 
+  }
+  else {
+    return( leaf.list ) ## STOP
+  }
+
+}
+
+
+LTfunction <- function(Y, Z, X, X.i){
+	n1 <- length(Y)/4
+	n2 <- length(Y)/2
+	n3 <- n1+n2
+  
+  matched <- MatchForTree(Y=Y[c(1:n1, (n2+1):n3)],
+                          Z=Z[c(1:n1, (n2+1):n3)],
+                          X=X[c(1:n1, (n2+1):n3),1:ncol(X.i)],
+                          version=version)
+                          
+  ymatch <- matched$Y.match
+  xmatch <- matched$X.match
+  itrt <- matched$itrt
+  ictl <- matched$ictl
+  
+LT <- LMEtree(ymatch, 
+                as.matrix(xmatch), 
+                ictl, 
+                1:nrow(as.matrix(xmatch)),1:length(c((n1+1):n2,(n3+1):length(Y))),
+                as.matrix(X[c((n1+1):n2,(n3+1):length(Y)),1:ncol(X.i)]))
+                
+return(LT)
+}
+
+
+grp_fnnc <- function(LT, id){
+	if(LT$nodetype == "<leaf>"){
+		grp.ids <- LT$index.TEST
+	}else{
+	k=1
+	str <- "LT$"
+	while(k < 100){
+	if(tryCatch(id %in% eval(parse(text=paste(str,"left$index.TEST",sep=""))),
+		error = function(i){return(FALSE)})){
+		grp.ids <- eval(parse(text=paste(str,"left$index.TEST",sep="")))
+		str <- paste(str,"left$",sep="")
+		k=k+1
+	}else if(tryCatch(id %in% eval(parse(text=paste(str,"right$index.TEST",sep=""))),
+		error=function(i){return(FALSE)})){
+		grp.ids <- eval(parse(text=paste(str,"right$index.TEST",sep="")))
+		str <- paste(str,"right$",sep="")
+		k=k+1
+	}else{
+		break
+	}
+	}
+	}
+	return(grp.ids)
+}
+
+est_fncn <- function(Y, Z, X, X.i, grp.ids, LT){
+
+	n1 <- length(Y)/2
+	ind1 <- grp.ids[which(grp.ids > n1)]
+	ind2 <- grp.ids[which(grp.ids <= n1)]
+	m1 <- mean(Y[ind1])
+	m2 <- mean(Y[ind2])
+	
+	mean <- m1 - m2
+
+	return(mean)
+}
+
+
+TMEANS <- c()
+TSDS <- c()
+TMSES <- c()
+CMEANS <- c()
+CSDS <- c()
+CMSES <- c()
+k=1
+
+###################################One simulation#########################################
+#Type I Error sims
+N<-2000
+numx <- 5
+alpha<-0.8
+theta<-0.8
+beta<- c(1,.8,.6,.4,.2,0,0,0)
+gamma <- c(1, 0, 0, 0) #might have to change this depending on scenario
+phi <- c(0, 0,0, 0, 0) #might have to change this depending on scenario
+rho<-0 #might have to change this depending on scenario
+version="prognostic"
+Y <- list()
+X <- list()
+X.i <- list()
+W <- list()
+M <- list()
+mu <- list()
+set.seed(205)
+for(i in 1:1000){
+Z <- rep(c(0, 1), each = N/2)
+  
+  ### Define the correlation matrix
+  sigma <- diag(numx)
+  sigma[upper.tri(sigma) | lower.tri(sigma)] <- rho ## Compound symmetry
+  
+  X.i[[i]] <- mvrnorm(N,mu=rep(0,numx),Sigma=sigma)
+  #X.i[[i]] <- matrix(rbinom(N*numx,size=1,prob=0.5), nrow=N)
+  
+  #might have to change this depending on simulation scenario
+  X[[i]] <- cbind(X.i[[i]], 
+             X.i[[i]][,1] * X.i[[i]][,2], 
+             sqrt(abs(X.i[[i]][,3])),
+             as.integer(X.i[[i]][,4] > 0))
+  
+  #might have to change this depending on simulation scenario
+  W[[i]] <- cbind(Z * X[[i]][,1] * X[[i]][,2], 
+             Z * ifelse(X[[i]][,2] > 0, 1, 0),
+             Z * (X[[i]][,1] > -0.5 & X[[i]][,1] < 0.5), 
+             Z * ifelse(X[[i]][,2] > 0, 1, 0))
+     
+  #might have to change this depending on simulation scenario
+  M[[i]] <- ifelse(X.i[[i]] > 0, 1, 0)
+  
+  mu[[i]] <- alpha + theta * Z + X[[i]] %*% beta + W[[i]] %*% gamma + M[[i]] %*% phi
+
+  Y[[i]] <- rnorm(N, mean=mu[[i]])
+  
+  #might have to change this depending on simulation scenario
+  trt.eff[[i]] <- theta + cbind(X[[i]][,1] * X[[i]][,2], 
+             ifelse(X[[i]][,2] > 0, 1, 0),
+             (X[[i]][,1] > -0.5 & X[[i]][,1] < 0.5), 
+             ifelse(X[[i]][,2] > 0, 1, 0)) %*% gamma 
+  
+  
+} 
+ 
+#might have to change this depending on simulation scenario
+Nused <- 200
+subjects <- c(1:(Nused/2), 1001:(1000+Nused/2))
+
+
+#this gets the tree for the estimation sample
+res <- lapply(1:1000, function(i) LTfunction(Y[[i]][subjects], Z[subjects], X[[i]][subjects,], X.i[[i]][subjects,]))
+
+
+n1 <- (Nused/4)+1
+n2<-(Nused/2)
+n3 <- (1000+(Nused/4))+1
+n4<-(1000+(Nused/2))
+
+test.subj <- c(n1:n2,n3:n4)
+
+#get the id of the covariate vector for which we want to find the treatment effect 
+test.case <- unlist(lapply(1:1000, function(i) which(X[[i]][test.subj,1] > 0 & Z[test.subj] == 1)[1]))
+
+#get the ids in the leaf that the test case belongs to
+grp.ids <- lapply(1:1000, function(i) grp_fnnc(res[[i]], test.case[i]))
+
+#this gets the estimated treatment effect for the test case 
+#(and also for all covariate vectors that belong in the same leaf as the test case)
+trt.effect <- lapply(1:1000, function(i) est_fncn(Y[[i]][test.subj], Z[test.subj], 
+	X[[i]][test.subj,], X.i[[i]][test.subj,], grp.ids[[i]], res[[i]]))
+
+
+
+
+opTree1<-list()
+
+for(i in 1:1000){
+	simulation.1 <- as.data.frame(cbind(Y[[i]][subjects], Z[subjects], X.i[[i]][subjects,]))
+
+
+	n <- nrow(simulation.1)
+	trIdx <- which(simulation.1$V2 == 1) 
+	conIdx <- which(simulation.1$V2 == 0) 
+	train_idx <- c(sample(trIdx, length(trIdx) / 2), 
+							sample(conIdx, length(conIdx) / 2))
+							
+	train_data <- simulation.1[train_idx, ]
+	est_data <- simulation.1[-train_idx, ]
+
+	honestTree <- honest.causalTree(V1 ~ V3 + V4 + V5 + V6 + V7, data = train_data, treatment =
+		train_data$V2, est_data = est_data, est_treatment = est_data$V2, split.Rule = "CT", 
+		split.Honest = T, HonestSampleSize = nrow(est_data), split.Bucket = T, cv.option = 
+		"fit", 
+		cv.Honest = F)
+	
+	opcp <- honestTree$cptable[,1][which.min(honestTree$cptable[,4])]
+
+	opTree1[[i]] <- prune(honestTree, opcp)
+
+}
+
+
+yhat <- lapply(1:1000, function(i) predict(opTree1[[i]], newdata=as.data.frame(cbind(Y[[i]], Z, X.i[[i]]))))
+
+frame1 <- lapply(1:1000, function(i) opTree1[[i]]$frame)
+
+
+obj<-list(frame1,yhat)
+
+trt.effect <- lapply(1:1000, function(i) yhat[[i]][test.subj])
+
+bias <- lapply(1:1000, function(i) mean(abs(trt.effect[[i]] - trt.eff[[i]][test.subj])))
+sds <- lapply(1:1000, function(i) sd(trt.effect[[i]] - trt.eff[[i]][test.subj]))
+mse <- lapply(1:1000, function(i) mean((trt.effect[[i]] - trt.eff[[i]][test.subj])^2))
+
+#causal tree 
+CMEANS[k] <- mean(unlist(bias),na.rm=TRUE)
+CSDS[k] <- mean(unlist(sds),na.rm=TRUE)
+CMSES[k] <- mean(unlist(mse),na.rm=TRUE)
+
+
+
+#get the ids in the leaf that the test case belongs to
+grp.ids <- list()
+for(i in 1:1000){
+	kay=1
+	temp <- c()
+	grp.ids[[i]] <- list()
+	grp.ids[[i]][[1]] <- grp_fnnc(res[[i]], (1:(Nused/2))[1])
+	temp <- grp.ids[[i]][[1]]
+	kay=2
+	j=2		
+	while(sum(!(1:(Nused/2)) %in% temp) > 0){
+		if(!((1:(Nused/2))[j] %in% temp)){
+			grp.ids[[i]][[kay]] <- grp_fnnc(res[[i]], (1:(Nused/2))[j])
+			temp <- c(temp, grp.ids[[i]][[kay]])
+			kay=kay+1
+		}
+			j=j+1
+	}
+}
+
+
+trt.effect <- lapply(1:1000, function(i) 
+	unlist(lapply(1:length(grp.ids[[i]]), function(j) 
+		rep(est_fncn(Y[[i]][test.subj], Z[test.subj], 
+			X[[i]][test.subj,], X.i[[i]][test.subj,], grp.ids[[i]][[j]], res[[i]]),
+			length(grp.ids[[i]][[j]]))), 
+				))
+
+for(i in 1:1000){ trt.effect2[[i]] <- trt.effect[[i]][order(unlist(grp.ids[[i]]))]}
+trt.effect <- trt.effect2
+
+
+
+bias <- lapply(1:1000, function(i) mean(abs(trt.effect[[i]] - trt.eff[[i]][test.subj])))
+sds <- lapply(1:1000, function(i) sd(trt.effect[[i]] - trt.eff[[i]][test.subj]))
+mse <- lapply(1:1000, function(i) mean((trt.effect[[i]] - trt.eff[[i]][test.subj])^2))
+
+#tehtrees
+TMEANS[k] <- mean(unlist(bias),na.rm=TRUE)
+TSDS[k] <- mean(unlist(sds),na.rm=TRUE)
+TMSES[k] <- mean(unlist(mse),na.rm=TRUE)
+
+k=k+1
+
+###################################End one simulation#####################################
+##Do the above for the remaining simulations...
+

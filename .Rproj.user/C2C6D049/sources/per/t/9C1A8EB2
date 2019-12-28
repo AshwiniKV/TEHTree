@@ -1,0 +1,22 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1577570941740.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "1180299692",
+    "id" : "9C1A8EB2",
+    "lastKnownWriteTime" : 1577572477,
+    "last_content_update" : 1577572477013,
+    "path" : "~/TEHTree/R/LMEtree.R",
+    "project_path" : "R/LMEtree.R",
+    "properties" : {
+        "cursorPosition" : "0,45",
+        "scrollLine" : "0"
+    },
+    "relative_order" : 4,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}

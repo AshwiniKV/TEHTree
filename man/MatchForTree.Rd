@@ -2,9 +2,10 @@
 % Please edit documentation in R/MatchForTree.R
 \name{MatchForTree}
 \alias{MatchForTree}
-\title{Matching Function}
+\title{Function to construct matched pairs over treated and control subjects and compute their relevant causal effect
+(Relevant for both the double-sample and single-sample tree)}
 \usage{
-MatchForTree(Y, Z, X, version = "standard", nmatch = 1)
+MatchForTree(Y, Z, X, version = "standard")
 }
 \arguments{
 \item{Y}{Response vector}
@@ -13,14 +14,13 @@ MatchForTree(Y, Z, X, version = "standard", nmatch = 1)
 
 \item{X}{Covariate matrix}
 
-\item{version}{Version of the code}
-
-\item{nmatch}{Number matched}
+\item{version}{Type of matching (i.e., standard, prognostic, Xmin, Xtrt, biasadjusted, autobalance)}
 }
 \value{
 A list object that records the response, covariate, treated index and control index from the matched dataset
 }
 \description{
-Matching Function
+Function to construct matched pairs over treated and control subjects and compute their relevant causal effect
+(Relevant for both the double-sample and single-sample tree)
 }
 \keyword{matching}

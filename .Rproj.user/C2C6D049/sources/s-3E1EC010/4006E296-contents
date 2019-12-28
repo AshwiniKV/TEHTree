@@ -1,0 +1,33 @@
+#' Use the matched dataset for the LMEtree (double-sample tree)
+#'
+#' @param Y Response vector
+#' @param Z Treatment indicator
+#' @param X Covariate matrix
+#' @param X.i Covariate matrix corresponding to the test sample
+#' @export
+#'
+
+
+LTfunction <- function(Y, Z, X, X.i){
+  n1 <- length(Y)/4
+  n2 <- length(Y)/2
+  n3 <- n1+n2
+
+  matched <- MatchForTree(Y=Y[c(1:n1, (n2+1):n3)],
+                          Z=Z[c(1:n1, (n2+1):n3)],
+                          X=X[c(1:n1, (n2+1):n3),1:ncol(X.i)],
+                          version=version)
+
+  ymatch <- matched$Y.match
+  xmatch <- matched$X.match
+  itrt <- matched$itrt
+  ictl <- matched$ictl
+
+  LT <- LMEtree(ymatch,
+                as.matrix(xmatch),
+                ictl,
+                1:nrow(as.matrix(xmatch)),1:length(c((n1+1):n2,(n3+1):length(Y))),
+                as.matrix(X[c((n1+1):n2,(n3+1):length(Y)),1:ncol(X.i)]))
+
+  return(LT)
+}

@@ -2,7 +2,7 @@
 % Please edit documentation in R/LMEtree.R
 \name{LMEtree}
 \alias{LMEtree}
-\title{Build the tree and specify the appropriate parameters}
+\title{Build the double-sample tree structure and specify the appropriate parameters}
 \usage{
 LMEtree(Y, X, ctl.ind, indx, indx.TEST, X.TEST, pval.thresh = 0.05,
   min.leaf.size = 20, min.split.size = 10, split.pts = 0.05)
@@ -16,7 +16,7 @@ LMEtree(Y, X, ctl.ind, indx, indx.TEST, X.TEST, pval.thresh = 0.05,
 
 \item{indx}{Index}
 
-\item{indx.TEST}{Index Test dataset}
+\item{indx.TEST}{Index in the Test dataset}
 
 \item{X.TEST}{The defined covariate test dataset}
 
@@ -29,5 +29,5 @@ LMEtree(Y, X, ctl.ind, indx, indx.TEST, X.TEST, pval.thresh = 0.05,
 \item{split.pts}{Increment of the sequence to define split points}
 }
 \description{
-Build the tree and specify the appropriate parameters
+Build the double-sample tree structure and specify the appropriate parameters
 }
