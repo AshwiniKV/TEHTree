@@ -2,7 +2,7 @@
 % Please edit documentation in R/est_func.R
 \name{est_fncn}
 \alias{est_fncn}
-\title{Estimation function over the test sample to determine the CATE (double-sample tree)}
+\title{Estimation function over the test sample to determine the subgroup specific estimate (using the double-sample tree)}
 \usage{
 est_fncn(Y, Z, X, X.i, grp.ids, LT)
 }
@@ -20,5 +20,5 @@ est_fncn(Y, Z, X, X.i, grp.ids, LT)
 \item{LT}{Tree structure}
 }
 \description{
-Estimation function over the test sample to determine the CATE (double-sample tree)
+Estimation function over the test sample to determine the subgroup specific estimate (using the double-sample tree)
 }

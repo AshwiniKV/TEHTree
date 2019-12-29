@@ -2,7 +2,7 @@
 % Please edit documentation in R/LTfunction.R
 \name{LTfunction}
 \alias{LTfunction}
-\title{Use the matched dataset for the LMEtree (double-sample tree)}
+\title{Use the matched dataset for the LMEdtree (double-sample tree)}
 \usage{
 LTfunction(Y, Z, X, X.i)
 }
@@ -16,5 +16,5 @@ LTfunction(Y, Z, X, X.i)
 \item{X.i}{Covariate matrix corresponding to the test sample}
 }
 \description{
-Use the matched dataset for the LMEtree (double-sample tree)
+Use the matched dataset for the LMEdtree (double-sample tree)
 }

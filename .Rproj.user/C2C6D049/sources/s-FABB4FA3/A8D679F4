@@ -1,0 +1,23 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1577648917817.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "3108343595",
+    "id" : "A8D679F4",
+    "lastKnownWriteTime" : 1577648927,
+    "last_content_update" : 1577648927264,
+    "path" : "~/TEHTree/R/LTfunction.R",
+    "project_path" : "R/LTfunction.R",
+    "properties" : {
+        "cursorPosition" : "0,39",
+        "scrollLine" : "0",
+        "tempName" : "Untitled1"
+    },
+    "relative_order" : 4,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}

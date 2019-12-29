@@ -1,0 +1,23 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1577648970205.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "0",
+    "id" : "3A42FB66",
+    "lastKnownWriteTime" : 1577644412,
+    "last_content_update" : 1577644412,
+    "path" : "~/TEHTree/R/LMEstree.R",
+    "project_path" : "R/LMEstree.R",
+    "properties" : {
+        "cursorPosition" : "98,0",
+        "scrollLine" : "73",
+        "tempName" : "Untitled1"
+    },
+    "relative_order" : 7,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}

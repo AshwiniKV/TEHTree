@@ -1,0 +1,23 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1577648814044.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "3199265218",
+    "id" : "6BF21D24",
+    "lastKnownWriteTime" : 1577648842,
+    "last_content_update" : 1577648842846,
+    "path" : "~/TEHTree/R/est_func.R",
+    "project_path" : "R/est_func.R",
+    "properties" : {
+        "cursorPosition" : "0,99",
+        "scrollLine" : "0",
+        "tempName" : "Untitled1"
+    },
+    "relative_order" : 1,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}
