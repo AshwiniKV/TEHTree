@@ -2,20 +2,20 @@
 % Please edit documentation in R/TreeMat.R
 \name{TreeMat}
 \alias{TreeMat}
-\title{TEHTree matrix}
+\title{Use the constructed single-sample tree and estimate the effects over the same sample}
 \usage{
 TreeMat(orig.LT, orig.Y, orig.X)
 }
 \arguments{
-\item{orig.LT}{Output from the LMEtree}
+\item{orig.LT}{Use the constructed tree structure}
 
-\item{orig.Y}{Responses from the matched dataset}
+\item{orig.Y}{Use the response vector (original, not matched)}
 
-\item{orig.X}{Covariates from the matched dataset}
+\item{orig.X}{Use the covariate matrix (original, not matched)}
 }
 \value{
-Tree structure recorded as a matrix
+A matrix composed of the tree structure and corresponding effects
 }
 \description{
-TEHTree matrix
+Use the constructed single-sample tree and estimate the effects over the same sample
 }

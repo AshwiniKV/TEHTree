@@ -1,0 +1,22 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1577570941740.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "0",
+    "id" : "9C1A8EB2",
+    "lastKnownWriteTime" : 1577642877,
+    "last_content_update" : 1577642877,
+    "path" : "~/TEHTree/R/LMEdtree.R",
+    "project_path" : "R/LMEdtree.R",
+    "properties" : {
+        "cursorPosition" : "63,41",
+        "scrollLine" : "39"
+    },
+    "relative_order" : 4,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}

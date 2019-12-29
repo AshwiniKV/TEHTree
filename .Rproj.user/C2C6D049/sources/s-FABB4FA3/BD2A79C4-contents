@@ -1,0 +1,399 @@
+library(mvtnorm)
+library(Matching)
+library(parallel)
+library(partykit)
+library(rgenoud)
+library(nlme)
+library(SuperLearner)
+
+## Half subjects in each treatment group
+#trt <- c(rep(0,n/2),rep(1,n/2))
+## Number of terminal nodes from each repetition will be stored
+## stored in nodes matrix
+#nodes <- vector(mode="numeric",length=reps)
+#termnodep <- matrix(nrow=reps,ncol=99)
+
+## Each row corresponds to one simulation. n, repetitions, 
+## number of covariates, intercovariate corelation, and the max 
+## number of nodes from the repetitions are listed for reference.
+## power <- matrix(nrow=99,ncol=10)
+## colnames(power) <- c("n","reps","numx","VarType","corr","MultNodes",
+##                     "pvalThresh","SplitPts","MinLeaf","MatchType")
+
+MatchForTree <- function(Y, Z, X, version = "standard", nmatch = 1) {
+  
+  if(is.null(dim(X))) {
+    X.cat <- length(table(X)) <= 5
+  }  else {
+    X.cat <- apply(X,2,function(x) { length(table(x))<=5})
+  }
+  
+  if(version == "standard") { 
+    M <- Match(Y=Y,
+               Tr=Z,
+               X=X,
+               exact=X.cat,
+               ties=FALSE,
+               estimand="ATT",
+               version = "fast")
+    Yout <- Y[M$index.treated] - Y[M$index.control]
+    
+    if(is.null(dim(X))) {
+      ##Xout <- (X[M$index.treated] + X[M$index.control]) / 2
+      Xout <- min(abs(X[M$index.treated]), abs() + X[M$index.control]) / 2
+    } else{
+      Xout <- sapply(1:ncol(X),function(j) {
+        x <- X[,j]
+        if(X.cat[j]) { return(x[M$index.treated]) }
+        else { return((x[M$index.treated]+x[M$index.control])/2)}
+      })
+    }
+    
+  }
+  
+  if(version == "prognostic") { 
+    #rhs <- paste( sprintf("X[, %d]", 1:(ncol(X))), collapse = " + ")
+    #fmla <- sprintf("Y ~ %s", rhs)
+    
+    #D <- data.frame( Y, X )
+    PS <- predict( SuperLearner( Y = Y, X = data.frame(X),
+                                SL.library = c("SL.glm", "SL.randomForest", "SL.gam",
+                                             "SL.polymars", "SL.mean", "SL.glm.interaction",
+                                  "SL.step", "SL.step.interaction")),
+                  newdata = data.frame(X))$pred
+    
+#    PS <- predict( lm( Y ~ .*., data = D ) )
+    
+    M <- Match(Y=Y,
+               Tr=Z,
+               X=PS,
+               ties=FALSE,
+               estimand="ATT",
+               version = "fast")
+    Yout <- Y[M$index.treated] - Y[M$index.control]
+    
+    if(is.null(dim(X))) {
+      Xout <- X[M$index.treated]
+      #Xout <- (X[M$index.treated] + X[M$index.control]) / 2
+    } else{
+      Xout <- X[M$index.treated, ]
+      #Xout <- sapply(1:ncol(X),function(j) {
+      #  x <- X[,j]
+      #  if(X.cat[j]) { return(x[M$index.treated]) }
+      #  else { return((x[M$index.treated]+x[M$index.control])/2)}
+      #})
+    } 
+  }
+  
+  if(version == "Xmin") { 
+    M <- Match(Y=Y,
+               Tr=Z,
+               X=X,
+               exact=X.cat,
+               ties=FALSE,
+               estimand="ATT",
+               version = "fast")
+    Yout <- Y[M$index.treated] - Y[M$index.control]
+    
+    if(is.null(dim(X))) {
+      ##Xout <- (X[M$index.treated] + X[M$index.control]) / 2
+      XTC <- cbind( X[M$index.treated], X[M$index.control])
+      Xout <- apply( XTC, 1, function(xrow) { xrow[which.min(abs(xrow))] })
+    } else{
+      Xout <- sapply(1:ncol(X),function(j) {
+        x <- X[,j]
+        if(X.cat[j]) { return(x[M$index.treated]) }
+        else { 
+          XTC <- cbind( x[M$index.treated], x[M$index.control])
+          return( apply( XTC, 1, function(xrow) { xrow[which.min(abs(xrow))] }) )
+        } })  }
+  }
+  
+  if(version == "Xtrt") {
+    M <- Match(Y=Y,
+               Tr=Z,
+               X=X,
+               exact=X.cat,
+               ties=FALSE,
+               estimand="ATT",
+               version = "fast")
+    Yout <- Y[M$index.treated] - Y[M$index.control]
+    
+    if(is.null(dim(X))) {
+      ##Xout <- (X[M$index.treated] + X[M$index.control]) / 2
+      Xout <- X[M$index.treated]
+    } else{
+      Xout <- sapply(1:ncol(X),function(j) {
+        x <- X[,j]
+        if(X.cat[j]) { return(x[M$index.treated]) }
+        else { 
+          XTC <- cbind( x[M$index.treated], x[M$index.control])
+          return( apply( XTC, 1, function(xrow) { xrow[which.min(abs(xrow))] }) )
+        } })  }    
+  }
+  
+  if(version == "biasadjusted") {
+    M <- Match(Y=Y,
+               Tr=Z,
+               X=X,
+               exact=X.cat,
+               ties=TRUE,
+               estimand="ATT",
+               BiasAdjust = TRUE,
+               version = "standard")
+    bias <- M$est.noadj - M$est
+    Yout <- Y[M$index.treated] - Y[M$index.control] - bias 
+    
+    if(is.null(dim(X))) {
+      Xout <- (X[M$index.treated] + X[M$index.control]) / 2
+    } else{
+      Xout <- sapply(1:ncol(X),function(j) {
+        x <- X[,j]
+        if(X.cat[j]) { return(x[M$index.treated]) }
+        else { return((x[M$index.treated]+x[M$index.control])/2)}
+      })
+    }
+    
+  }
+  
+  if(version == "autobalance") {
+    sink("NUL")
+    G <- GenMatch(Tr=Z, X=X, exact = X.cat, ties = FALSE, verbose = FALSE)
+    sink()
+    
+    M <- Match(Y=Y,
+               Tr=Z,
+               X=X,
+               exact=X.cat,
+               ties=FALSE,
+               estimand="ATT",
+               Weight.matrix = G,
+               version = "fast")
+    Yout <- Y[M$index.treated] - Y[M$index.control]
+    
+    if(is.null(dim(X))) {
+      Xout <- (X[M$index.treated] + X[M$index.control]) / 2
+    } else{
+      Xout <- sapply(1:ncol(X),function(j) {
+        x <- X[,j]
+        if(X.cat[j]) { return(x[M$index.treated]) }
+        else { return((x[M$index.treated]+x[M$index.control])/2)}
+      })
+    }
+  }
+  
+  return(list(Y.match=Yout,X.match=Xout, itrt = M$index.treated, ictl = M$index.control))
+}
+
+
+LMEtree <- function(Y,X,ctl.ind,indx,pval.thresh=0.2, min.leaf.size=12, min.split.size=7, split.pts=0.05,
+                    min.eff.size=0.25*sd(Y,na.rm=T)) {
+  
+  leaf.list <- list(nodetype = "<leaf>",
+       index = indx,
+       splitleft = NA,
+       splitright = NA,
+       left = NA,
+       right = NA)
+  
+  #partysplit(length, index = indx)
+  
+  if(length(indx) < min.leaf.size) return(leaf.list)
+  
+  df  <- data.frame(Y,X,ctl.ind)[indx,]
+  colnames(df) <- c("Y",paste0("X",1:ncol(X)),"ctl.ind")
+  
+  p <- sapply(1:ncol(X), function(j) {
+    if(sum(diff(df[,sprintf("X%d",j)]))==0) { return(1) }
+    fmla <- as.formula( sprintf("Y~X%d",j))
+    fit  <- suppressWarnings(lme(fmla, random = ~1 | ctl.ind, data = df))
+    ## Grab the p-value
+    pval <- summary(fit)$tTable[2,5]
+    return(ifelse(is.nan(pval),1,pval))
+  })
+  
+  if(is.null(p)) return(leaf.list)
+  
+  ## Apply the Bonferroni correction
+  corr.pval <-  p.adjust(p, method = "bonferroni", n = length(p))
+  
+  k <- which.min(corr.pval)
+  
+  if(is.null(k)) return( leaf.list )
+  if(corr.pval[k] < pval.thresh) {
+    ## Do the splitting:
+    df$X.split <- X[indx,k]
+    split.points <- unique(quantile(df$X.split, seq(0,1,by=split.pts)))
+
+    valid.split.points <- split.points[sapply(split.points, function(sp) {
+      split.left <- indx[ which( df$X.split <= sp) ]
+      split.right <- indx[ which( df$X.split > sp) ]
+      return( (length(split.left) >= min.split.size) & (length(split.right) >= min.split.size) )
+    })]
+
+    if(length(valid.split.points)==0) return(leaf.list) ## If no valid split points
+    
+    coeffs <- try( sapply( valid.split.points, 
+                      function(x) {
+                        df$x <- x
+                        fit <- try( lme(Y~I(X.split <= x), random = ~1 | ctl.ind, data = df) )
+                        if(inherits(fit, "try-error")) return(0)
+                        return(summary(fit)$tTable[2,1])
+                      }) )
+    if(inherits(coeffs, "try-error")) {
+      warning("Error in splitting, cutting off tree building.")
+      return(leaf.list)
+    }
+    
+    ## Check size of coefficient
+    ##if(abs(max(abs(coeffs))) < min.eff.size) return(leaf.list)
+    if(!is.numeric(coeffs)) return(leaf.list)
+    
+    ## Find the largest coefficient
+    wmax.coeff <- which.max(abs(coeffs))
+    ## Split indx according
+    split.left <- indx[ which( df$X.split < valid.split.points[wmax.coeff]) ]
+    split.right <- indx[ which( df$X.split >= valid.split.points[wmax.coeff]) ]
+    
+    splitvarleft <- sprintf("X%d <= %.2f",k, valid.split.points[wmax.coeff])
+    splitvarright <- sprintf("X%d > %.2f", k, valid.split.points[wmax.coeff])
+    
+    ## return split index
+    return( list( nodetype = "internal",
+                  index = indx,
+                  splitleft = splitvarleft, 
+                  splitright = splitvarright,
+                  left = LMEtree(Y,X,ctl.ind,split.left,pval.thresh), 
+                  right = LMEtree(Y,X,ctl.ind,split.right,pval.thresh) ) ) 
+  }
+  else {
+    return( leaf.list ) ## STOP
+  }
+
+}
+
+TreeMat <- function(orig.LT, orig.Y, orig.X) {
+
+  k <- 1
+  frame.list <- list()
+  
+  TreeInfo <- function(LT, Y, X, k) {
+  
+    if(LT$nodetype == "<leaf>") {
+    indx <- LT$index
+    mn <- mean(Y[indx])
+    frame.list[[k]] <<- c("<leaf>", 
+                length(indx), # Number of observations
+                length(indx), # Weights of observations; assumed all 1
+                mean( (Y[indx] - mean(Y[indx]))^2), # deviance
+                mean(Y[indx]), #fitted value
+                0, 0, 0) # complexity, ncompete, nsurrogate
+    return(k+1)
+  } else {
+    indx <- LT$index
+    frame.list[[k]] <<- c( LT$splitleft,
+                         length(indx),
+                         length(indx),
+                         mean( (Y[indx] - mean(Y[indx]))^2),
+                         mean(Y[indx]),
+                         0, 0, 0)
+    k.new <- k+1
+    frame.list[[k.new]] <<- c( LT$splitright,
+                               length(indx),
+                               length(indx),
+                               mean( (Y[indx] - mean(Y[indx]))^2),
+                               mean(Y[indx]),
+                         0, 0, 0)
+    k.new <- k.new + 1
+    k.new <- TreeInfo(LT$left, Y, X, k.new)
+    k.new <- TreeInfo(LT$right, Y, X, k.new)
+    return(k.new)
+  }
+  }
+  
+  TreeInfo(orig.LT, orig.Y, orig.X, 1)
+  M <- do.call("rbind", frame.list)
+  colnames(M) <- c("split", "nobs", "wtobs", "dev", "fitted", "complexity", "ncompete", "nsurrogate")
+  return( data.frame(M) )
+}
+
+
+getTrees <- function(N, numx = 5, rho = 0, alpha, theta, beta, gamma, version = "prognostic", ...) {
+  
+  Z <- rep(c(0, 1), each = N/2)
+  
+  ### Define the correlation matrix
+  sigma <- diag(numx)
+  sigma[upper.tri(sigma) | lower.tri(sigma)] <- rho ## Compound symmetry
+  
+  X.i <- rmvnorm(N,mean=rep(0,numx),sigma=sigma)
+  X <- cbind(X.i, 
+             X.i[,1] * X.i[,2], 
+             sqrt(abs(X.i[,3])),
+             as.integer(X.i[,4] > 0))
+#             sin(X.i[,3] / max(abs(X.i[,3]))), 
+#              )
+
+  W <- cbind(Z * X[,1], 
+             Z * (X[,1] > 0),
+             Z * (X[,2] > -1 & X[,2] < 1), 
+             Z * (X[,3] > -1 & X[,4] < 1))
+  
+  mu <- alpha + theta * Z + X %*% beta + W %*% gamma
+  Y <- rnorm(N, mean=mu)
+  
+  matched <- MatchForTree(Y=Y,
+                          Z=Z,
+                          X=X[,1:ncol(X.i)],
+                          version=version)
+  ymatch <- matched$Y.match
+  xmatch <- matched$X.match
+  itrt <- matched$itrt
+  ictl <- matched$ictl
+  
+  LT <- LMEtree(ymatch, 
+                as.matrix(xmatch), 
+                ictl, 
+                1:nrow(as.matrix(xmatch)),
+                ...)
+  
+  return(TreeMat(LT, ymatch, as.matrix(xmatch)))
+  
+}
+
+N <- 200; numx <- 5; 
+
+#source("params/params-type1.R")
+source("params/params-power.R")
+
+simparams <- data.frame( N = rep(N, length(alphas)),
+                         numx = rep(numx, length(alphas)),
+                         alpha = alphas, 
+                         theta = thetas, 
+                         beta = betas, 
+                         gamma = gammas, 
+                         rho = rhos)
+
+nsim <- 5
+
+results <- list(length=nrow(simparams))
+
+for(i in 1:nrow(simparams)) {
+  #print(sprintf("Scenario %d", i))
+  alpha <- simparams$alpha[i]
+  theta <- simparams$theta[i]
+  gamma <- as.numeric(simparams[i, sprintf("gamma.%d",1:4)])
+  beta <- matrix( as.numeric(simparams[i, sprintf("beta.%d",1:8)]) )
+  rho <- simparams$rho[i]
+  
+  results[[i]] <- mclapply( 1:nsim,
+                           function(j) {
+                             info <- sprintf("%d%% done", round(100*j/nsim))
+                             return( getTrees(N, numx, rho, alpha, theta, beta, gamma ) ) },
+                           mc.cores = 1 )
+}
+
+dput( list(simparams = simparams,
+           nsim = nsim,
+           results = results), "~/sims/tehtrees/results/moreSL-power-07-30-16.Robj")
+
