@@ -3,12 +3,11 @@ setwd("./Desktop/TEHTrees")
 # Request access to the BLS dataset (6 months)
 blsdata6<-read.csv("blsdata6.csv")
 blsdata6<-blsdata6[,-1]
-#blsdata6<-read.table("C:\\Users\\2158844V\\Documents\\BLS (8).Rdata", header = TRUE, sep = "")
-#blsdata6<-read.table("C:\\Users\\user\\ownCloud2\\BLS (8).Rdata", header = TRUE, sep = "")
 
 redbls<-blsdata6[,c(3, 10, 15, 53, 55, 84, 102, 106, 119:129, 132, 168, 172:174, 257:258, 273)]
 redbls<-redbls[complete.cases(redbls),]
 
+# Remove subjects in the control group
 redbls<-redbls[!redbls$trt == "Control",]
 
 Y<-redbls$kcal24h6
@@ -33,7 +32,7 @@ mean(kcaltrt) - mean(kcalctrl)
 library(causalTree)
 redbls1<-redbls[,-1]
 tree <- causalTree(kcal24h6~., data = redbls1, treatment = as.logical(Z),
-                   split.Rule = "CT", cv.option = "CT", split.Honest = T, cv.Honest = T, split.Bucket = F, 
+                   split.Rule = "CT", cv.option = "CT", split.Honest = T, cv.Honest = T, split.Bucket = F,
                    xval = 6, cp = 0, minsize = 10)
 
 opcp <- tree$cptable[,1][which.min(tree$cptable[,4])]
@@ -52,15 +51,15 @@ ymatch <- matched$Y.match
 xmatch <- matched$X.match
 itrt <- matched$itrt
 ictl <- matched$ictl
-LT1 <- LMEtree(ymatch, 
-              as.matrix(xmatch), 
-              ictl, 
+LT1 <- LMEtree(ymatch,
+              as.matrix(xmatch),
+              ictl,
               1:nrow(as.matrix(xmatch)), pval.thresh = 0.85, min.split.size = 5)
 
 TreeMat(LT1, ymatch, as.matrix(xmatch))
 ##################################################
 
-# Permuted 
+# Permuted
 library(permute)
 ids_X<-1:nrow(X)
 newdata<-data.frame(cbind(ids_X, X))
@@ -75,9 +74,9 @@ xmatch <- matched$X.match
 
 itrt <- matched$itrt
 ictl <- matched$ictl
-LT <- LMEtree(ymatch, 
-              as.matrix(xmatch), 
-              ictl, 
+LT <- LMEtree(ymatch,
+              as.matrix(xmatch),
+              ictl,
               1:nrow(as.matrix(xmatch)), pval.thresh = 0.8, min.split.size = 5)
 
 TreeMat(LT, ymatch, as.matrix(xmatch))
@@ -89,7 +88,7 @@ library(causalTree)
 newdata1<-data.frame(cbind(Y, newX))
 
 tree <- causalTree(Y~., data = newdata1, treatment = as.logical(Z),
-                   split.Rule = "CT", cv.option = "CT", split.Honest = T, 
+                   split.Rule = "CT", cv.option = "CT", split.Honest = T,
                    cv.Honest = T, split.Bucket = F, minsize = 10)
 
 opcp <- tree$cptable[,1][which.min(tree$cptable[,4])]
@@ -97,7 +96,7 @@ opfit <- prune(tree, opcp)
 rpart.plot(opfit)
 
 ###############
-# Causal Forest 
+# Causal Forest
 ###############
 # Reproducible result note: Differences introduced by the training and test samples.
 
@@ -114,25 +113,25 @@ cf <- causal_forest(
 )
 
 preds <- predict(
-  object = cf, 
-  newdata = model.matrix(~ ., data = test[, c(2:5, 7:ncol(test))]), 
+  object = cf,
+  newdata = model.matrix(~ ., data = test[, c(2:5, 7:ncol(test))]),
   estimate.variance = TRUE
 )
 
 plot_pres_htes <- function(conf.preds, conf.int = FALSE, z = 1.96) {
   if (is.null(conf.preds$predictions) || length(conf.preds$predictions) == 0)
     stop("conf.preds must include a column called 'predictions'")
-  
+
   # Order the patients by the value of the treatment effect (Increasing)
   out <- ggplot(
     mapping = aes(
-      x = rank(conf.preds$predictions), 
+      x = rank(conf.preds$predictions),
       y = conf.preds$predictions
     )
   ) + geom_point() +
     labs(x = "Patient (Test dataset)", y = "Estimated Treatment Effect - Ordered") +
     theme_light() +ylim(-200, 600)
-  
+
   if (conf.int && length(conf.preds$variance.estimates) > 0) {
     out <- out +
       geom_errorbar(
@@ -167,7 +166,7 @@ library(causalTree)
 redbls1<-redbls2[,-1]
 redbls1<-redbls1[,-c(5:6, 8)]
 tree <- causalTree(kcal24h6~., data = redbls1, treatment = as.logical(Z),
-                   split.Rule = "CT", cv.option = "CT", split.Honest = T, cv.Honest = T, split.Bucket = F, 
+                   split.Rule = "CT", cv.option = "CT", split.Honest = T, cv.Honest = T, split.Bucket = F,
                    xval = 6, cp = 0, minsize = 10)
 
 opcp <- tree$cptable[,1][which.min(tree$cptable[,4])]
@@ -185,15 +184,15 @@ ymatch <- matched$Y.match
 xmatch <- matched$X.match
 itrt <- matched$itrt
 ictl <- matched$ictl
-LT1 <- LMEtree(ymatch, 
-               as.matrix(xmatch), 
-               ictl, 
+LT1 <- LMEtree(ymatch,
+               as.matrix(xmatch),
+               ictl,
                1:nrow(as.matrix(xmatch)), pval.thresh = 0.05, min.split.size = 10)
 
 TreeMat(LT1, ymatch, as.matrix(xmatch))
 ##################################################
 
-# Permuted 
+# Permuted
 library(permute)
 ids_X<-1:nrow(X)
 newdata<-data.frame(cbind(ids_X, X))
@@ -207,9 +206,9 @@ xmatch <- matched$X.match
 
 itrt <- matched$itrt
 ictl <- matched$ictl
-LT <- LMEtree(ymatch, 
-              as.matrix(xmatch), 
-              ictl, 
+LT <- LMEtree(ymatch,
+              as.matrix(xmatch),
+              ictl,
               1:nrow(as.matrix(xmatch)), pval.thresh = 0.05, min.split.size = 10)
 
 TreeMat(LT, ymatch, as.matrix(xmatch))
@@ -220,7 +219,7 @@ library(causalTree)
 newdata1<-data.frame(cbind(Y, newX))
 names(newdata1)<-c("Y", "bmi0", "age", "edeq14.0", "hunger")
 tree <- causalTree(Y~., data = newdata1, treatment = as.logical(Z),
-                   split.Rule = "CT", cv.option = "CT", split.Honest = T, cv.Honest = T, split.Bucket = F, 
+                   split.Rule = "CT", cv.option = "CT", split.Honest = T, cv.Honest = T, split.Bucket = F,
                    xval = 6, cp = 0, minsize = 10)
 
 opcp <- tree$cptable[,1][which.min(tree$cptable[,4])]
@@ -228,7 +227,7 @@ opfit <- prune(tree, opcp)
 rpart.plot(opfit)
 
 ###############
-# Causal Forest 
+# Causal Forest
 ###############
 
 cases <- sample(seq_len(nrow(redbls2)), round(nrow(redbls2) * .75))
@@ -246,8 +245,8 @@ cf <- causal_forest(
 )
 
 preds <- predict(
-  object = cf, 
-  newdata = model.matrix(~ ., data = test[, c(2, 4:5, 8)]), 
+  object = cf,
+  newdata = model.matrix(~ ., data = test[, c(2, 4:5, 8)]),
   estimate.variance = TRUE
 )
 
