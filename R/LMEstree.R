@@ -88,8 +88,8 @@ LMEstree <- function(Y,X,ctl.ind,indx,pval.thresh=0.2, min.leaf.size=12, min.spl
                   index = indx,
                   splitleft = splitvarleft,
                   splitright = splitvarright,
-                  left = LMEtree(Y,X,ctl.ind,split.left,pval.thresh),
-                  right = LMEtree(Y,X,ctl.ind,split.right,pval.thresh) ) )
+                  left = LMEstree(Y,X,ctl.ind,split.left,pval.thresh),
+                  right = LMEstree(Y,X,ctl.ind,split.right,pval.thresh) ) )
   }
   else {
     return( leaf.list ) ## STOP

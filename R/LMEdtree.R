@@ -111,8 +111,8 @@ LMEdtree <- function(Y,X,ctl.ind,indx,indx.TEST,X.TEST,pval.thresh=0.05,min.leaf
                   index.TEST = indx.TEST,
                   splitleft = splitvarleft,
                   splitright = splitvarright,
-                  left = LMEtree(Y,X,ctl.ind,split.left, split.left.TEST,X.TEST,pval.thresh),
-                  right = LMEtree(Y,X,ctl.ind,split.right, split.right.TEST,X.TEST,pval.thresh) ) )
+                  left = LMEdtree(Y,X,ctl.ind,split.left, split.left.TEST,X.TEST,pval.thresh),
+                  right = LMEdtree(Y,X,ctl.ind,split.right, split.right.TEST,X.TEST,pval.thresh) ) )
   }
   else {
     return( leaf.list ) ## STOP

@@ -1,5 +1,5 @@
 getwd()
-setwd("./Desktop/TEHTrees")
+setwd("./Desktop")
 # Request access to the BLS dataset (6 months)
 blsdata6<-read.csv("blsdata6.csv")
 blsdata6<-blsdata6[,-1]
@@ -41,7 +41,13 @@ rpart.plot(opfit)
 
 #######################
 set.seed(10)
-
+library(SuperLearner)
+library(mvtnorm)
+library(nlme)
+library(Matching)
+library(parallel)
+library(partykit)
+library(rgenoud)
 X<-redbls[,c(2:5, 7:27)]
 # Use single sample TEHTree code
 matched1_orig <- MatchForTree(Y=Y, Z=as.logical(Z), X=X, version="prognostic")
@@ -51,7 +57,7 @@ ymatch <- matched$Y.match
 xmatch <- matched$X.match
 itrt <- matched$itrt
 ictl <- matched$ictl
-LT1 <- LMEtree(ymatch,
+LT1 <- LMEstree(ymatch,
               as.matrix(xmatch),
               ictl,
               1:nrow(as.matrix(xmatch)), pval.thresh = 0.85, min.split.size = 5)
@@ -184,7 +190,7 @@ ymatch <- matched$Y.match
 xmatch <- matched$X.match
 itrt <- matched$itrt
 ictl <- matched$ictl
-LT1 <- LMEtree(ymatch,
+LT1 <- LMEstree(ymatch,
                as.matrix(xmatch),
                ictl,
                1:nrow(as.matrix(xmatch)), pval.thresh = 0.05, min.split.size = 10)
@@ -206,7 +212,7 @@ xmatch <- matched$X.match
 
 itrt <- matched$itrt
 ictl <- matched$ictl
-LT <- LMEtree(ymatch,
+LT <- LMEstree(ymatch,
               as.matrix(xmatch),
               ictl,
               1:nrow(as.matrix(xmatch)), pval.thresh = 0.05, min.split.size = 10)
