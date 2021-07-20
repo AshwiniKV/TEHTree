@@ -1,6 +1,6 @@
 Package: TEHTree
 Title: TEHTree: Treatment effect heterogeneity tree
-Version: 0.0.1.0
+Version: 1.0
 Authors@R: 
     person(given = "Ashwini",
            family = "Venkatasubramaniam",

@@ -1,4 +1,5 @@
 #' Group ID Function - Double Sample Approach
+#'
 #' Implementation described in est_fncn()
 #'
 #' @param LT Tree List

@@ -2,8 +2,7 @@
 % Please edit documentation in R/grp_func.R
 \name{grp_func}
 \alias{grp_func}
-\title{Group ID Function - Double Sample Approach
-Implementation described in est_fncn()}
+\title{Group ID Function - Double Sample Approach}
 \usage{
 grp_func(LT, id)
 }
@@ -13,7 +12,6 @@ grp_func(LT, id)
 \item{id}{ID}
 }
 \description{
-Group ID Function - Double Sample Approach
 Implementation described in est_fncn()
 }
 \keyword{Subgroup}

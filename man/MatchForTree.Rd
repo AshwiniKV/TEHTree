@@ -2,7 +2,7 @@
 % Please edit documentation in R/MatchForTree.R
 \name{MatchForTree}
 \alias{MatchForTree}
-\title{Matching Function - Single and Double Sample Approach}
+\title{Matching Function}
 \usage{
 MatchForTree(Y, Z, X, version = "prognostic")
 }

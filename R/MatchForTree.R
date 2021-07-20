@@ -1,4 +1,4 @@
-#' Matching Function - Single and Double Sample Approach
+#' Matching Function
 #'
 #' This function is used for matching with replacement and determines the treatment effect and relevant covariates for the matched pairs.
 #'

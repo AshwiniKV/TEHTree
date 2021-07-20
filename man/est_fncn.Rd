@@ -2,8 +2,7 @@
 % Please edit documentation in R/est_fncn.R
 \name{est_fncn}
 \alias{est_fncn}
-\title{Estimation function - Double Sample Approach
-This function estimates the treatment effect using a known tree structure}
+\title{Estimation function - Double Sample Approach}
 \usage{
 est_fncn(Y, Z, X, X.i, grp.ids, LT)
 }
@@ -21,7 +20,6 @@ est_fncn(Y, Z, X, X.i, grp.ids, LT)
 \item{LT}{Tree list - double sample}
 }
 \description{
-Estimation function - Double Sample Approach
 This function estimates the treatment effect using a known tree structure
 }
 \examples{
