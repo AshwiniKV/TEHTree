@@ -1,4 +1,5 @@
 #' Estimation function - Double Sample Approach
+#'
 #' This function estimates the treatment effect using a known tree structure
 #'
 #' @param Y response vector
