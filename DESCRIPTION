@@ -1,0 +1,17 @@
+Package: TEHTree
+Title: TEHTree: Treatment effect heterogeneity tree
+Version: 0.0.1.0
+Authors@R: 
+    person(given = "Ashwini",
+           family = "Venkatasubramaniam",
+           role = c("aut", "cre"),
+           email = "ashwinikv01@gmail.com",
+           comment = c(ORCID = "YOUR-ORCID-ID"))
+Description: This is a novel approach that combines prognostic score matching and conditional inference trees to characterize effect heterogeneity of a randomized binary treatment. 
+License: GPL-3
+Encoding: UTF-8
+Depends: MASS, SuperLearner, Matching
+Imports: stats, nlme
+LazyData: true
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.1.1
