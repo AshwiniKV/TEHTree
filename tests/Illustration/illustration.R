@@ -1,13 +1,16 @@
 
 # Request access to the BLS dataset (6 months)
-blsdata6<-read.csv("blsdata6.csv")
-blsdata6<-blsdata6[,-1]
+library(TEHTree)
+library(causalTree)
+library(permute)
+library(grf)
+
+data("blsdata6")
 names(blsdata6)<-c("trt", "bmi", "kcal24h6", "age", "edeq14", "hunger")
+head(blsdata6)
 
 # Causal Tree - double sample
 # Use only 4 covariates - age, bmi, hunger and edeq14.0
-
-library(causalTree)
 redbls1<-blsdata6[,-c(1)]
 tree <- causalTree(kcal24h6~., data = redbls1, treatment = (blsdata6$trt -1),
                    split.Rule = "CT", cv.option = "CT", split.Honest = T, cv.Honest = T, split.Bucket = F,
@@ -23,7 +26,6 @@ rpart.plot(opfit)
 # Variations introduced by the matching process
 #set.seed(15)
 set.seed(60)
-library(TEHTree)
 X<-blsdata6[,c(2, 4:6)]
 matched1_orig <- MatchForTree(Y=blsdata6$kcal24h6, Z=blsdata6$trt-1, X=X, version="prognostic")
 LT1<-LTfunction(blsdata6$kcal24h6, blsdata6$trt-1, X, X)
@@ -31,9 +33,10 @@ TreeMat(LT1, matched1_orig$Y.match, as.matrix(matched1_orig$X.match))
 
 ##################################################
 
-# Permuted
-library(permute)
-set.seed(50)
+# Permuted - One example
+# Variations introduced by the matching function and the permuted dataset
+
+#set.seed(50)
 ids_X<-1:nrow(X)
 newdata<-data.frame(cbind(ids_X, X))
 nids_X<-shuffle(newdata$ids_X)
@@ -44,7 +47,6 @@ LT2<-LTfunction(blsdata6$kcal24h6, blsdata6$trt-1, newX, newX)
 TreeMat(LT2, matched2_orig$Y.match, as.matrix(matched2_orig$X.match))
 #####################################
 
-library(causalTree)
 newdata1<-data.frame(cbind(blsdata6$kcal24h6, newX))
 names(newdata1)<-c("Y", "bmi0", "age", "edeq14.0", "hunger")
 tree <- causalTree(Y~., data = newdata1, treatment = blsdata6$trt-1,
@@ -62,8 +64,6 @@ set.seed(100)
 cases <- sample(seq_len(nrow(blsdata6)), round(nrow(blsdata6) * .67))
 train <- blsdata6[cases,]
 test <- blsdata6[-cases,]
-
-library(grf)
 
 cf <- causal_forest(
   X = model.matrix(~ ., data = train[, c(2, 4:6)]),
