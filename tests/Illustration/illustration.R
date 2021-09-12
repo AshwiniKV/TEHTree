@@ -10,7 +10,7 @@ names(blsdata6)<-c("trt", "bmi", "kcal24h6", "age", "edeq14", "hunger")
 head(blsdata6)
 
 # Causal Tree - double sample
-# Use only 4 covariates - age, bmi, hunger and edeq14.0
+# Use only 4 covariates - age, bmi, edeq14_0 and hunger
 redbls1<-blsdata6[,-c(1)]
 tree <- causalTree(kcal24h6~., data = redbls1, treatment = (blsdata6$trt -1),
                    split.Rule = "CT", cv.option = "CT", split.Honest = T, cv.Honest = T, split.Bucket = F,

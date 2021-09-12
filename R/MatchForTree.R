@@ -8,6 +8,8 @@
 #' @param version version type of matching to be performed
 #' @keywords matching prognostic treatment
 #' @export
+#' @import polspline
+#' @import randomForest
 #' @import SuperLearner
 #' @import Matching
 #' @importFrom MASS mvrnorm

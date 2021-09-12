@@ -10,8 +10,9 @@ Authors@R:
 Description: This is a novel approach that combines prognostic score matching and conditional inference trees to characterize effect heterogeneity of a randomized binary treatment. 
 License: GPL-3
 Encoding: UTF-8
-Depends: MASS, SuperLearner, Matching
+Depends: MASS, polspline, randomForest, SuperLearner, Matching
 Imports: stats, nlme
+Suggests: permute, grf, partykit
 LazyData: true
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.1.1
